@@ -1,4 +1,5 @@
 ﻿using System.Windows;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using ModernPosApp.Data;
@@ -21,7 +22,12 @@ public partial class App : Application
 					  .ConfigureServices((context, services) =>
 					  {
 						  // services
-						  services.AddDbContext<AppDbContext>();
+						  services.AddDbContext<AppDbContext>(options =>
+						  {
+							  options.UseSqlite("Data Source=modernpos.db");
+						  });
+						  services.AddTransient<ICustomerService, CustomerService>();
+						  
 						  services.AddSingleton<INavigationService, NavigationService>();
 						  services.AddSingleton<IThemeService, ThemeService>();
 
@@ -41,6 +47,20 @@ public partial class App : Application
 	protected override void OnStartup(StartupEventArgs e)
 	{
 		base.OnStartup(e);
+		
+		using (var scope = AppHost.Services.CreateScope())
+		{
+			var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+			
+			dbContext.Database.Migrate();
+			
+			var env = scope.ServiceProvider.GetRequiredService<IHostEnvironment>();
+			
+			if (env.IsDevelopment())
+			{
+				DbSeeder.Seed(dbContext);
+			}
+		}
 		
 		var mainWindow = AppHost.Services.GetService<MainWindow>();
 		

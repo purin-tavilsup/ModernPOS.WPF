@@ -5,18 +5,20 @@ namespace ModernPosApp.Services;
 
 public class NavigationService : INavigationService
 {
-	private readonly IServiceProvider _serviceProvider;
+	private readonly IServiceScopeFactory _scopeFactory;
 	
 	public ContentControl ContentHost { get; set; }
 	
-	public NavigationService(IServiceProvider serviceProvider)
+	public NavigationService(IServiceScopeFactory scopeFactory)
 	{
-		_serviceProvider = serviceProvider;
+		_scopeFactory = scopeFactory;
 	}
 
 	public void NavigateTo<T>() where T: class
 	{
-		var view = _serviceProvider.GetRequiredService<T>() as UserControl;
+		using var scope = _scopeFactory.CreateScope();
+
+		var view = scope.ServiceProvider.GetRequiredService<T>() as UserControl;
 
 		if (view is null)
 		{
